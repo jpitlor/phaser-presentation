@@ -1,9 +1,16 @@
 import Phaser from "phaser";
 import * as scene from "./scene";
 
-const game = new Phaser.Game({
+export const game = new Phaser.Game({
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: innerWidth,
+    height: innerHeight,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: {y: 600},
+            debug: false
+        }
+    },
     scene
 });
