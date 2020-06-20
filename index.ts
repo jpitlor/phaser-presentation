@@ -17,3 +17,5 @@ export const game = new Phaser.Game({
     },
     scene
 });
+
+document.oncontextmenu = e => e.preventDefault();

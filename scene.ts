@@ -1,24 +1,33 @@
-import sky from "../assets/sky.png";
-import platform from "../assets/platform.png";
-import playerSprite from "../assets/player.png";
-import red from "../assets/red.png";
-import orange from "../assets/orange.png";
-import yellow from "../assets/yellow.png";
-import green from "../assets/green.png";
-import blue from "../assets/blue.png";
-import purple from "../assets/purple.png";
+import sky from './assets/sky.png';
+import platform from './assets/platform.png';
+import playerSprite from './assets/player.png';
+import red from './assets/red.png';
+import orange from './assets/orange.png';
+import yellow from './assets/yellow.png';
+import green from './assets/green.png';
+import blue from './assets/blue.png';
+import purple from './assets/purple.png';
+import activeItemImage from './assets/active-item.png';
 
-interface Wasd {
-    up: Phaser.Input.Keyboard.Key,
-    down: Phaser.Input.Keyboard.Key,
-    left: Phaser.Input.Keyboard.Key,
-    right: Phaser.Input.Keyboard.Key
+interface Keys {
+    [k: string]: Phaser.Input.Keyboard.Key;
 }
 
 let platforms: Phaser.Physics.Arcade.StaticGroup
     ,player: Phaser.Physics.Arcade.Sprite
-    ,wasd: Wasd
+    ,keys: Keys
     ,arrows: Phaser.Types.Input.Keyboard.CursorKeys
+    ,activeItemFrame: Phaser.GameObjects.Image
+
+const inventory = [
+    'red',
+    'orange',
+    'yellow',
+    'green',
+    'blue',
+    'purple'
+];
+let activeItem = 0;
 
 export default class Scene extends Phaser.Scene {
     preload() {
@@ -30,6 +39,7 @@ export default class Scene extends Phaser.Scene {
         this.load.image('green', green);
         this.load.image('blue', blue);
         this.load.image('purple', purple);
+        this.load.image('activeItem', activeItemImage);
         this.load.spritesheet(
             'player',
             playerSprite,
@@ -72,19 +82,26 @@ export default class Scene extends Phaser.Scene {
         this.physics.add.collider(player, platforms);
 
         arrows = this.input.keyboard.createCursorKeys(),
-        wasd = this.input.keyboard.addKeys({ 
+        keys = this.input.keyboard.addKeys({ 
             up: Phaser.Input.Keyboard.KeyCodes.W, 
             down: Phaser.Input.Keyboard.KeyCodes.S,
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D
-        }) as Wasd;
+        }) as Keys;
+
+        const startX = (innerWidth / 2) - (64 * inventory.length / 2);
+        inventory.forEach((item, i) => {
+            this.add.image(startX + i * 64, 64, item);
+        });
+
+        activeItemFrame = this.add.image(startX, 64, 'activeItem');
     }
 
     update() {
-        if (arrows.left?.isDown || wasd.left?.isDown) {
+        if (arrows.left?.isDown || keys.left?.isDown) {
             player.setVelocityX(-250);
             player.anims.play('left', true);
-        } else if (arrows.right?.isDown || wasd.right?.isDown) {
+        } else if (arrows.right?.isDown || keys.right?.isDown) {
             player.setVelocityX(250);
             player.anims.play('right', true);
         } else {
@@ -92,14 +109,18 @@ export default class Scene extends Phaser.Scene {
             player.anims.play('turn');
         }
 
-        if (this.input.manager.pointers[0].leftButtonDown()) {
-
-        } else if (this.input.manager.pointers[0].rightButtonDown()) {
-            
-        }
-
-        if ((arrows.up?.isDown || wasd.up?.isDown) && player.body.touching.down) {
+        if ((arrows.up?.isDown || keys.up?.isDown) && player.body.touching.down) {
             player.setVelocityY(-1000);
         }
+
+        if (this.input.manager.pointers[0].leftButtonDown()) {
+            const children = platforms.getChildren();
+            // const child = children.find(c => c.y)
+        } else if (this.input.manager.pointers[0].rightButtonDown()) {
+
+        }
+
+        const startX = (innerWidth / 2) - (64 * inventory.length / 2);
+        activeItemFrame.setX(startX + activeItem * 64);
     }
 }
