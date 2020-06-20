@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import * as scene from "./scene";
+import scene from "./scene";
 
 export const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -8,9 +8,12 @@ export const game = new Phaser.Game({
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: {y: 600},
+            gravity: {y: 4000},
             debug: false
         }
+    },
+    input: {
+        activePointers: 1
     },
     scene
 });
