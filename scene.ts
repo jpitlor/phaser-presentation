@@ -47,6 +47,10 @@ function toDown(player: Phaser.Physics.Arcade.Sprite): number {
     return (bottomEdge + (64 - bottomEdge % 64)) + 32;
 }
 
+function findAngle(pointer: Phaser.Input.Pointer): number {
+    return Math.atan2(pointer.y - player.body.position.y, pointer.x - player.body.position.x);
+}
+
 export default class Scene extends Phaser.Scene {
     preload() {
         this.load.image('sky', sky);
@@ -126,12 +130,31 @@ export default class Scene extends Phaser.Scene {
         }
 
         const children = blocks.getChildren();
-        const targetX = toRight(player);
-        const targetY = (player.y - (player.y % 64)) + 16;
+        
+        const angle = findAngle(this.input.manager.activePointer);
+        console.log(angle);
+        let targetX: number, targetY: number;
+
+        if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) {
+            targetX = player.x - player.x % 64;
+            targetY = toUp(player);
+        } else if (angle >= -3 * Math.PI / 4 && angle < -1 * Math.PI / 4) {
+            targetX = player.x - player.x % 64;
+            targetY = toDown(player);
+        } else if (angle >= -1 * Math.PI / 4 && angle < Math.PI / 4) {
+            targetX = toRight(player);
+            targetY = (player.y - (player.y % 64)) + 16;
+        } else {
+            targetX = toLeft(player);
+            targetY = (player.y - (player.y % 64)) + 16;
+        } 
+
         const targetBlock = children.find(c => 
             (c.body as Phaser.Physics.Arcade.Body).position.x + 32 === targetX &&
             (c.body as Phaser.Physics.Arcade.Body).position.y + 32 === targetY
         );
+        
+
         if (this.input.manager.activePointer.leftButtonDown()) {
             if (targetBlock && !clicked) targetBlock.destroy();
             clicked = true;
