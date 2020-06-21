@@ -1,5 +1,4 @@
 import sky from './assets/sky.png';
-import platform from './assets/platform.png';
 import playerSprite from './assets/player.png';
 import red from './assets/red.png';
 import orange from './assets/orange.png';
@@ -13,7 +12,7 @@ interface Keys {
     [k: string]: Phaser.Input.Keyboard.Key;
 }
 
-let platforms: Phaser.Physics.Arcade.StaticGroup
+let blocks: Phaser.Physics.Arcade.StaticGroup
     ,player: Phaser.Physics.Arcade.Sprite
     ,keys: Keys
     ,arrows: Phaser.Types.Input.Keyboard.CursorKeys
@@ -28,11 +27,29 @@ const inventory = [
     'purple'
 ];
 let activeItem = 0;
+let clicked = false;
+
+function toRight(player: Phaser.Physics.Arcade.Sprite): number {
+    const rightEdge = player.x + player.width;
+    return (rightEdge + (64 - rightEdge % 64)) + 32;
+}
+
+function toLeft(player: Phaser.Physics.Arcade.Sprite): number {
+    return (player.x - (player.x % 64)) - 64 + 32;
+}
+
+function toUp(player: Phaser.Physics.Arcade.Sprite): number {
+    return (player.y - (player.y % 64)) - 64 + 32;
+}
+
+function toDown(player: Phaser.Physics.Arcade.Sprite): number {
+    const bottomEdge = player.y + player.height;
+    return (bottomEdge + (64 - bottomEdge % 64)) + 32;
+}
 
 export default class Scene extends Phaser.Scene {
     preload() {
         this.load.image('sky', sky);
-        this.load.image('ground', platform);
         this.load.image('red', red);
         this.load.image('orange', orange);
         this.load.image('yellow', yellow);
@@ -53,14 +70,9 @@ export default class Scene extends Phaser.Scene {
             .setOrigin(0, 0)
             .setScale(Math.ceil(innerWidth / 800), Math.ceil(innerHeight / 600));
 
-        platforms = this.physics.add.staticGroup();
-        platforms
-            .create(0, innerHeight - 32, 'ground')
-            .setOrigin(0, 0)
-            .setScale(Math.ceil(innerWidth / 400), 1)
-            .refreshBody();
+        blocks = this.physics.add.staticGroup();
 
-        player = this.physics.add.sprite(100, innerHeight - 56, 'player');
+        player = this.physics.add.sprite(100, 100, 'player');
         player.setCollideWorldBounds(true);
         this.anims.create({
             key: 'left',
@@ -79,7 +91,7 @@ export default class Scene extends Phaser.Scene {
             frameRate: 10,
             repeat: -1
         });
-        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(player, blocks);
 
         arrows = this.input.keyboard.createCursorKeys(),
         keys = this.input.keyboard.addKeys({ 
@@ -109,16 +121,37 @@ export default class Scene extends Phaser.Scene {
             player.anims.play('turn');
         }
 
-        if ((arrows.up?.isDown || keys.up?.isDown) && player.body.touching.down) {
+        if ((arrows.up?.isDown || keys.up?.isDown) && player.body.blocked.down) {
             player.setVelocityY(-1000);
         }
 
-        if (this.input.manager.pointers[0].leftButtonDown()) {
-            const children = platforms.getChildren();
-            // const child = children.find(c => c.y)
-        } else if (this.input.manager.pointers[0].rightButtonDown()) {
-
+        const children = blocks.getChildren();
+        const targetX = toRight(player);
+        const targetY = (player.y - (player.y % 64)) + 16;
+        const targetBlock = children.find(c => 
+            (c.body as Phaser.Physics.Arcade.Body).position.x + 32 === targetX &&
+            (c.body as Phaser.Physics.Arcade.Body).position.y + 32 === targetY
+        );
+        if (this.input.manager.activePointer.leftButtonDown()) {
+            if (targetBlock && !clicked) targetBlock.destroy();
+            clicked = true;
+        } else if (this.input.manager.activePointer.rightButtonDown()) {
+            const anchorBlock = children.find(c => 
+                (c.body as Phaser.Physics.Arcade.Body).position.x + 32 === targetX &&
+                (c.body as Phaser.Physics.Arcade.Body).position.y + 32 === targetY + 64
+            );
+            if (!targetBlock && !clicked && (targetY + 64 > innerHeight || !!anchorBlock)) blocks.create(targetX, targetY, inventory[activeItem]);
+            clicked = true;
+        } else {
+            clicked = false;
         }
+
+        if (this.input.manager.activePointer.deltaY > 0) {
+            activeItem = (activeItem + 1) % inventory.length;
+        } else if (this.input.manager.activePointer.deltaY < 0) {
+            activeItem = activeItem ? activeItem - 1 : inventory.length - 1;
+        }
+        this.input.manager.activePointer.deltaY = 0;
 
         const startX = (innerWidth / 2) - (64 * inventory.length / 2);
         activeItemFrame.setX(startX + activeItem * 64);

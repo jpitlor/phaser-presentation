@@ -8,8 +8,7 @@ export const game = new Phaser.Game({
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: {y: 4000},
-            debug: false
+            gravity: {y: 4000}
         }
     },
     input: {
